@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Winter Arc Tracker</title>
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Winter Arc"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="theme-color" content="#7a0a18">
+<style>
+:root{--bg:#fbf1f2;--card:#fff;--card2:#f6e3e6;--tx:#2b0a10;--mut:#7a4a52;--gold:#b87900;--red:#b01224;--ok:#1f9d55;--line:#00000018;--bar:#0000001a;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#17050a;--card:#2a0a11;--card2:#3b1019;--tx:#fbeff0;--mut:#c9a0a6;--gold:#ffc21a;--red:#ff4d5e;--ok:#34d27b;--line:#ffffff1a;--bar:#ffffff1f}}
+:root[data-theme="dark"]{--bg:#17050a;--card:#2a0a11;--card2:#3b1019;--tx:#fbeff0;--mut:#c9a0a6;--gold:#ffc21a;--red:#ff4d5e;--ok:#34d27b;--line:#ffffff1a;--bar:#ffffff1f}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;max-width:640px;margin:auto;padding:14px 14px 40px}
+h1{margin:6px 0 2px;font-size:26px;letter-spacing:.5px}
+h1 b{color:var(--gold)}
+.sub{color:var(--mut);font-size:13px;margin-bottom:14px}
+
+/* Hero Section & Interactive Ring */
+.hero{display:flex;flex-direction:column;gap:12px;background:linear-gradient(135deg,var(--card),var(--card2));border:1px solid var(--line);border-radius:20px;padding:16px}
+.scope-pills{display:flex;gap:6px;width:100%;background:var(--bg);padding:3px;border-radius:12px;border:1px solid var(--line)}
+.sp-btn{flex:1;background:none;border:none;border-radius:9px;padding:6px 4px;font-size:11.5px;font-weight:600;color:var(--mut);cursor:pointer;transition:all .2s;text-align:center;-webkit-tap-highlight-color:transparent}
+.sp-btn.on{background:var(--card);color:var(--tx);font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.hero-top{display:flex;gap:14px;align-items:center}
+.ring-wrap{width:110px;height:110px;position:relative;flex:none;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .15s}
+.ring-wrap:active{transform:scale(.94)}
+.ring-svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring-bg{fill:none;stroke:var(--bar);stroke-width:8.5}
+.ring-fg{fill:none;stroke:url(#ringGrad);stroke-width:8.5;stroke-linecap:round;stroke-dasharray:251.33;stroke-dashoffset:251.33;transition:stroke-dashoffset .7s cubic-bezier(.4,0,.2,1)}
+.ring-core{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none}
+#pct-val{font-size:22px;font-weight:800;line-height:1;color:var(--tx)}
+#pct-sub{font-size:9.5px;font-weight:700;color:var(--gold);margin-top:3px;letter-spacing:.3px;text-transform:uppercase}
+.ring-hint{display:block;font-size:8px;color:var(--mut);margin-top:1px}
+
+/* Stats */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;flex:1}
+.st{background:var(--bg);border-radius:12px;padding:8px 10px;cursor:pointer;transition:transform .1s,background .2s;-webkit-tap-highlight-color:transparent}
+.st:active{transform:scale(.97)}
+.st b{font-size:18px;display:block}.st span{font-size:11px;color:var(--mut)}
+
+/* Subject Bars */
+.sub-bars{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:10px;border-top:1px solid var(--line)}
+.sb-item{background:var(--bg);border-radius:10px;padding:7px 9px;cursor:pointer;transition:transform .1s,background .2s;-webkit-tap-highlight-color:transparent}
+.sb-item:active{transform:scale(.97)}
+.sb-item.on{outline:1.5px solid var(--gold);background:var(--card2)}
+.sb-head{display:flex;justify-content:space-between;font-size:11px;font-weight:700;margin-bottom:4px}
+.sb-head span{color:var(--mut);font-weight:500;font-size:10px}
+.sb-track{height:5px;background:var(--bar);border-radius:4px;overflow:hidden}
+.sb-fill{height:100%;border-radius:4px;transition:width .5s ease}
+
+/* 9-Week Progress Chart Card */
+.week-chart-card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:12px 14px;margin-top:12px}
+.wc-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:12px}
+.wc-title{font-weight:700;color:var(--tx)}
+.wc-tip{font-size:11px;color:var(--gold);font-weight:600}
+.wc-bars{display:flex;justify-content:space-between;align-items:flex-end;height:76px;gap:5px;padding:4px 2px 0}
+.wc-col{flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
+.wc-pct{font-size:9px;font-weight:700;color:var(--mut);margin-bottom:3px}
+.wc-col.on .wc-pct{color:var(--red);font-weight:800}
+.wc-track{width:100%;max-width:24px;height:44px;background:var(--bar);border-radius:6px;display:flex;align-items:flex-end;overflow:hidden}
+.wc-fill{width:100%;background:var(--gold);border-radius:6px;transition:height .5s ease,background .2s}
+.wc-col.on .wc-fill{background:var(--red)}
+.wc-lbl{font-size:10px;color:var(--mut);margin-top:4px;font-weight:600}
+.wc-col.on .wc-lbl{color:var(--red);font-weight:800}
+
+/* Filter Banner */
+.filter-banner{display:flex;justify-content:space-between;align-items:center;background:var(--card2);border:1px dashed var(--gold);color:var(--tx);padding:8px 12px;border-radius:12px;margin:10px 0 4px;font-size:12px}
+.filter-banner button{background:var(--gold);color:#2b0a10;border:none;border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer}
+
+/* Tabs & Day Cards */
+.tabs{display:flex;gap:8px;overflow-x:auto;padding:16px 0 10px;scrollbar-width:none}
+.tab{flex:none;border:1px solid var(--line);background:var(--card);color:var(--tx);border-radius:14px;padding:8px 12px;font-size:12px;cursor:pointer;text-align:center;min-width:74px}
+.tab b{display:block;font-size:13px}
+.tab i{display:block;height:4px;border-radius:4px;background:var(--bar);margin-top:6px;overflow:hidden}
+.tab i u{display:block;height:100%;background:var(--gold)}
+.tab.on{background:var(--red);color:#fff;border-color:transparent}
+.tab.on i u{background:#fff}.tab.on i{background:#ffffff40}
+.wk{display:flex;justify-content:space-between;font-size:13px;color:var(--mut);margin:4px 2px 10px}
+.day{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:12px;margin-bottom:12px}
+.day.today{border:2px solid var(--gold)}
+.day.done{border-color:var(--ok)}
+.dh{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.dt{background:var(--gold);color:#2b0a10;border-radius:10px;width:46px;text-align:center;padding:4px 0;line-height:1.1;font-weight:800;font-size:18px}
+.dt small{display:block;font-size:10px}
+.dn{font-weight:700;font-size:15px}.dn small{display:block;color:var(--mut);font-weight:400;font-size:12px}
+.badge{margin-left:auto;font-size:11px;background:var(--gold);color:#2b0a10;padding:3px 8px;border-radius:20px;font-weight:700}
+.off{text-align:center;color:var(--red);font-weight:800;letter-spacing:1px;padding:10px;background:var(--card2);border-radius:12px;font-size:14px}
+.row{display:flex;align-items:center;gap:10px;padding:10px;border-radius:12px;background:var(--card2);margin-top:6px;cursor:pointer;user-select:none;font-size:13.5px;font-weight:600;-webkit-tap-highlight-color:transparent}
+.row .cb{width:22px;height:22px;border-radius:7px;border:2px solid var(--mut);flex:none;display:grid;place-items:center;color:#fff;font-size:14px}
+.row,.chip{transition:background .2s,transform .1s}.row:active,.chip:active{transform:scale(.97)}
+.row.on{background:color-mix(in srgb,var(--ok) 20%,var(--card2))}.row.on .cb{background:var(--ok);border-color:var(--ok)}
+.row.filter-dim{opacity:.35}
+.row.filter-hl{border:1px solid var(--gold);box-shadow:0 0 6px color-mix(in srgb,var(--gold) 40%,transparent)}
+@keyframes pop{0%{transform:scale(.9)}60%{transform:scale(1.04)}100%{transform:scale(1)}}.pop{animation:pop .3s}
+.row small{display:block;color:var(--mut);font-weight:500;font-size:10.5px}
+.hab{display:flex;gap:6px;margin-top:8px}
+.chip{flex:1;text-align:center;font-size:11px;padding:8px 2px;border-radius:12px;border:1px solid var(--line);cursor:pointer;color:var(--mut);user-select:none}
+.chip.on{background:var(--gold);color:#2b0a10;border-color:transparent;font-weight:700}
+.chip.filter-hl{outline:2px solid #38bdf8}
+.rem{margin-top:8px}
+.rb{font-size:12px;color:var(--mut);padding:9px 10px;border-radius:12px;border:1px dashed var(--line);cursor:pointer;user-select:none}
+.rb.has{color:var(--tx);border-style:solid;background:var(--card2)}
+.rem textarea{width:100%;background:var(--card2);color:var(--tx);border:1px solid var(--gold);border-radius:12px;padding:10px;font:inherit;font-size:14px;resize:vertical;outline:none}
+.btn-sub{display:block;width:100%;background:var(--gold);color:#2b0a10;border:none;border-radius:12px;padding:9px 12px;font-size:13px;font-weight:700;cursor:pointer;margin-top:6px;text-align:center;user-select:none;-webkit-tap-highlight-color:transparent;transition:transform .1s,opacity .15s}
+.btn-sub:active{transform:scale(.98);opacity:.9}
+.reset{display:block;margin:20px auto 0;background:none;border:1px solid var(--line);color:var(--mut);padding:8px 14px;border-radius:12px;font-size:12px;cursor:pointer}
+.note{color:var(--mut);font-size:11px;text-align:center;margin-top:10px}
+
+/* Analytics Modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;padding:16px;z-index:999;backdrop-filter:blur(4px)}
+.modal-bg.show{display:flex}
+.modal-card{background:var(--card);color:var(--tx);border:1px solid var(--line);border-radius:22px;max-width:440px;width:100%;max-height:85vh;overflow-y:auto;padding:18px;box-shadow:0 12px 36px rgba(0,0,0,.4)}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.modal-header b{font-size:17px;color:var(--gold)}
+.modal-close{background:var(--card2);border:none;border-radius:50%;width:30px;height:30px;display:grid;place-items:center;font-size:14px;color:var(--tx);cursor:pointer}
+.m-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.m-badge{background:var(--bg);border-radius:14px;padding:10px;border:1px solid var(--line);text-align:center}
+.m-badge.achieved{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 12%,var(--card))}
+.m-icon{font-size:22px;margin-bottom:3px;display:block}
+.m-badge b{display:block;font-size:12.5px;color:var(--tx)}
+.m-badge small{font-size:10px;color:var(--mut)}
+.m-stat-row{display:flex;justify-content:space-between;background:var(--card2);padding:9px 12px;border-radius:10px;margin-top:6px;font-size:12.5px}
+.m-stat-row b{color:var(--gold)}
+</style></head><body>
+<h1>WINTER <b>ARC</b></h1>
+<div class="sub">CDS &amp; NDA daily planner · 1 Nov – 31 Dec 2026 · tap to tick</div>
+
+<!-- Hero Card with Interactive Scope Pills & SVG Ring -->
+<div class="hero">
+  <div class="scope-pills" id="scope-pills">
+    <button type="button" class="sp-btn on" data-cm="arc">Arc Total</button>
+    <button type="button" class="sp-btn" data-cm="week">Active Week</button>
+    <button type="button" class="sp-btn" data-cm="today">Today</button>
+  </div>
+  <div class="hero-top">
+    <div class="ring-wrap" id="ring-wrap" title="Tap to switch progress view">
+      <svg class="ring-svg" viewBox="0 0 100 100">
+        <defs>
+          <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="var(--gold)"/>
+            <stop offset="100%" stop-color="var(--red)"/>
+          </linearGradient>
+        </defs>
+        <circle class="ring-bg" cx="50" cy="50" r="40"/>
+        <circle class="ring-fg" id="ring-fg" cx="50" cy="50" r="40"/>
+      </svg>
+      <div class="ring-core">
+        <span id="pct-val">0%</span>
+        <small id="pct-sub">Arc Total</small>
+        <span class="ring-hint">tap ⟳</span>
+      </div>
+    </div>
+    <div class="stats" id="stats-box" title="Tap for analytics">
+      <div class="st" data-action="insights"><b id="s1">0/0</b><span>Topics done ⓘ</span></div>
+      <div class="st" data-action="insights"><b id="s2">0</b><span>Day streak 🔥</span></div>
+      <div class="st" data-action="insights"><b id="s3">0</b><span>Habit ticks</span></div>
+      <div class="st" data-action="insights"><b id="s4">0</b><span>Days left</span></div>
+    </div>
+  </div>
+  <div class="sub-bars" id="sub-bars"></div>
+</div>
+
+<!-- Interactive 9-Week Progress Chart -->
+<div class="week-chart-card">
+  <div class="wc-header">
+    <span class="wc-title">📈 9-Week Arc Progression</span>
+    <span class="wc-tip" id="wc-tip">Tap bar to jump to week</span>
+  </div>
+  <div class="wc-bars" id="wc-bars"></div>
+</div>
+
+<div id="filter-banner-wrap"></div>
+
+<div class="tabs" id="tabs"></div>
+<div class="wk"><span id="wkt"></span><span id="wkp"></span></div>
+<div id="days"></div>
+<div style="display:flex;gap:8px;justify-content:center;margin-top:20px;flex-wrap:wrap"><button class="reset" id="bk" style="margin:0">Backup progress</button><button class="reset" id="rs" style="margin:0">Restore backup</button><button class="reset" id="reset" style="margin:0">Reset all</button></div>
+<div class="note">Progress is saved in this app on this device.</div>
+
+<!-- Analytics / Milestones Modal -->
+<div class="modal-bg" id="analytics-modal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <b>🏆 Arc Mastery &amp; Insights</b>
+      <button type="button" class="modal-close" id="modal-close">✕</button>
+    </div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+const R=`11-01|S
+11-02|BODY FLUIDS & CIRCULATION|TENSE|POS PYQ
+11-03|EXCHANGE OF GASES|TENSE|VOCAB REVISION
+11-04|DIGESTION|TENSE BASED ERROR|POS PYQ
+11-05|EXCRETION|NOUN|ROOT WORDS
+11-06|CELL DAY 01|NOUN|S1-S6
+11-07|CA CLASS ON YT|REVISE & PRACTICE PYQS / MCQS (TOPICS COVERED SO FAR)
+11-08|S
+11-09|H
+11-10|CELL DAY 02|IDIOMS & PHRASES|S1-S6
+11-11|TISSUE|VOCAB PYQ|S1-S2
+11-12|DISEASES|VOCAB PYQ|CLOZE TEST
+11-13|REPRODUCTION|PRONOUN|IDIOMS & PHRASES
+11-14|CONTROL & COORDINATION|ERROR PRACTICE|VOCAB PYQ
+11-15|S
+11-16|PLANT & HUMAN HORMONES|PRONOUN|ROOT WORDS + PYQS
+11-17|BIOTECHNOLOGY|VOCAB PYQ|SENTENCE COMPLETION
+11-18|DIVERSITY|VOCAB PYQ|S1-S6
+11-19|11TH & 12TH NCERT SELECTIVE TOPICS|VERB|HOMONYMS
+11-20|11TH & 12TH NCERT SELECTIVE TOPICS|VERB|IDIOMS & PHRASES
+11-21|COMPLETE BIOLOGY REVISION|VOCAB REVISION
+11-22|S
+11-23|ACIDS, BASES & SALTS|HOMONYMS|S1-S6
+11-24|CHEMICAL REACTION|VERB|CLOZE TEST
+11-25|CARBON & COMPOUNDS|VERB PRACTICE|DISCOURSE MARKERS
+11-26|METAL & NON-METAL|VOCAB REVISION|S1-S2
+11-27|ATOMS & MOLECULES|PAIR WORDS|S1-S2
+11-28|REVISE & PRACTICE PYQ (TOPICS COVERED SO FAR)|VOCAB REVISION|ERROR PRACTICE (PYQ)
+11-29|S
+11-30|STRUCTURE OF ATOMS|IDIOMS & PHRASES|MATCH THE FOLLOWING (PYQ)
+12-01|STATE OF MATTER|PAIR WORDS (PYQ)|S1-S2
+12-02|PERIODIC TABLE|HOMONYMS|POS PYQ
+12-03|11TH & 12TH NCERT SELECTIVE TOPICS|HOMONYMS|S1-S6
+12-04|COMPLETE BIOLOGY REVISION|HOMONYMS|DISCOURSE MARKER (PYQ)
+12-05|COMPLETE CHEMISTRY REVISION|VOCAB REVISION
+12-06|S
+12-07|EARTH ATMOSPHERE + HEAT BUDGET + LAYERS|MATCH THE FOLLOWING|POS PRACTICE
+12-08|WIND PRESSURE BELT|HOMONYMS PYQ|CLOZE TEST PYQ
+12-09|CYCLONE & ANTICYCLONE|HOMONYMS PYQ|SENTENCE COMPLETION
+12-10|INVERSION OF TEMP. + FORMS OF CONDENSATION|PAIR WORDS|ERROR (PYQ)
+12-11|CLOUDS & PRECIPITATION|IDIOMS & PHRASE PYQ|PQRS
+12-12|REVISE & PRACTICE PYQ (TOPICS COVERED SO FAR)|VOCAB REVISION
+12-13|S
+12-14|CORAL REEFS|DISCOURSE MARKER|S1-S6
+12-15|TIDES|PREPOSITION|HOMONYMS
+12-16|GEOMORPHIC PROCESSES|PREPOSITION|PAIR WORDS & PQRS
+12-17|ROCKS|PREPOSITION|S1-S2
+12-18|INTERIOR OF THE EARTH|PREPOSITION BASED FILL UP|S1-S6
+12-19|VOLCANOES & EARTHQUAKE|ERROR PRACTICE|IDIOMS & PHRASES
+12-20|S
+12-21|LANDFORMS|VOCAB REVISION|CLOZE TEST
+12-22|UNIVERSE + LATITUDE & LONGITUDE|CONJUNCTION|POS PRACTICE
+12-23|PHYSIOGRAPHY OF INDIA|CONJUNCTION|PQRS PRACTICE
+12-24|PHYSIOGRAPHY OF INDIA|VOCAB PYQ|PREPOSITION BASED FILL UP
+12-25|DRAINAGE SYSTEM|HOMONYMS|SENTENCE COMPLETION
+12-26|SOIL|IDIOMS & PHRASES|DISCOURSE MARKER
+12-27|S
+12-28|VEGETATION OF INDIA|BIOLOGY REVISION|VOCAB + S1-S6
+12-29|INDIAN CLIMATOLOGY|CHEMISTRY REVISION|POS PRACTICE & FILL UPS
+12-30|CROPS|PHYSICAL GEO REVISION|FULL MOCK (CDS II 2026)
+12-31|X`;
+const HAB=["📖 Book","📰 CA 30m","🔁 Recall 30m"],SUB=["GS","English","Practice"];
+const DN=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],MN=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const days=R.split("\n").map(l=>{const p=l.split("|"),[m,d]=p[0].split("-").map(Number),dt=new Date(2026,m-1,d);
+return{k:p[0],dt,m,d,w:Math.floor((dt-new Date(2026,10,1))/864e5/7),t:p.slice(1),off:["S","H","X"].includes(p[1])}});
+let st={};try{st=JSON.parse(localStorage.getItem("winterarc")||"{}")}catch(e){}
+const save=()=>{try{localStorage.setItem("winterarc",JSON.stringify(st))}catch(e){}};
+const g=(k,i)=>(st[k]||{})[i]?1:0;
+const nT=d=>d.off?0:d.t.length;
+const dT=d=>d.off?0:d.t.reduce((a,_,i)=>a+g(d.k,"t"+i),0);
+const dH=d=>[0,1,2].reduce((a,i)=>a+g(d.k,"h"+i),0);
+const now=new Date(),tk=`${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
+const inRange=now>=days[0].dt&&now<=new Date(2026,11,31,23,59);
+let wk=inRange?days.find(d=>d.k===tk).w:0;
+const wl=w=>{const a=days.filter(d=>d.w===w);return a[0].d+" "+MN[a[0].m-1]+" – "+a.at(-1).d+" "+MN[a.at(-1).m-1]};
+function wp(w){const a=days.filter(d=>d.w===w);const t=a.reduce((s,d)=>s+nT(d),0);return[a.reduce((s,d)=>s+dT(d),0),t]}
+
+let pop="";const opn=new Set();
+let chartMode="arc"; // "arc" | "week" | "today"
+let activeFilter=null; // null | "GS" | "English" | "Practice" | "Habits"
+
+const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const remHTML=d=>{const n=(st[d.k]||{}).n||"";return opn.has(d.k)?`<div class="rem"><textarea data-n="${d.k}" rows="3" placeholder="Write your remark for ${d.d} ${MN[d.m-1]}…">${esc(n)}</textarea><button type="button" class="btn-sub" data-r="${d.k}">Submit</button></div>`:`<div class="rem"><div class="rb ${n?"has":""}" data-r="${d.k}">📝 ${n?esc(n.length>60?n.slice(0,60)+"…":n):"Add remark"}</div></div>`};
+
+function getSubKey(d, i){
+  if(d.t.length===2&&i===1)return"English";
+  if(i===1)return"English";
+  if(i===2)return"Practice";
+  return"GS";
+}
+
+function render(){
+let T=0,D=0,H=0;
+let subTotals={GS:{d:0,t:0},English:{d:0,t:0},Practice:{d:0,t:0},Habits:{d:0,t:0}};
+
+days.forEach(d=>{
+  const n=nT(d),dn=dT(d),hn=dH(d);
+  T+=n; D+=dn; H+=hn;
+  if(!d.off){
+    d.t.forEach((_,i)=>{
+      const sk=getSubKey(d,i);
+      subTotals[sk].t++;
+      if(g(d.k,"t"+i))subTotals[sk].d++;
+    });
+  }
+  if(d.t[0]!=="X"){
+    subTotals.Habits.t+=3;
+    subTotals.Habits.d+=hn;
+  }
+});
+
+// Ring value calculation based on interactive chartMode
+let ringPct=0,ringSub="Arc Total";
+const [wDone,wTot]=wp(wk);
+const todayD=days.find(d=>d.k===tk);
+
+if(chartMode==="arc"){
+  ringPct=T?Math.round(D/T*100):0;
+  ringSub="Arc Total";
+}else if(chartMode==="week"){
+  ringPct=wTot?Math.round(wDone/wTot*100):0;
+  ringSub="Week "+(wk+1);
+}else if(chartMode==="today"){
+  if(todayD&&!todayD.off){
+    const tTot=nT(todayD)+3;
+    const tDone=dT(todayD)+dH(todayD);
+    ringPct=tTot?Math.round(tDone/tTot*100):0;
+  }else{
+    ringPct=0;
+  }
+  ringSub="Today";
+}
+
+const offset=251.33*(1-Math.min(100,Math.max(0,ringPct))/100);
+const ringFg=document.getElementById("ring-fg");
+if(ringFg)ringFg.style.strokeDashoffset=offset;
+document.getElementById("pct-val").textContent=ringPct+"%";
+document.getElementById("pct-sub").textContent=ringSub;
+
+// Scope pills update
+document.querySelectorAll(".sp-btn").forEach(btn=>{
+  btn.classList.toggle("on",btn.dataset.cm===chartMode);
+});
+
+// Stats boxes
+document.getElementById("s1").textContent=D+"/"+T;
+document.getElementById("s3").textContent=H;
+let sk=0;const past=days.filter(d=>!d.off&&(d.dt<now)&&(d.k!==tk));
+if(todayD&&!todayD.off&&dT(todayD)===nT(todayD))sk++;
+for(let i=past.length-1;i>=0;i--){if(dT(past[i])===nT(past[i]))sk++;else break}
+document.getElementById("s2").textContent=sk;
+const left=Math.max(0,Math.ceil((new Date(2026,11,31,23,59)-now)/864e5));
+document.getElementById("s4").textContent=now<days[0].dt?"61":left;
+
+// Subject breakdown bars
+document.getElementById("sub-bars").innerHTML=[
+  {k:"GS",label:"GS",col:"var(--gold)",d:subTotals.GS.d,t:subTotals.GS.t},
+  {k:"English",label:"English",col:"var(--red)",d:subTotals.English.d,t:subTotals.English.t},
+  {k:"Practice",label:"Practice",col:"var(--ok)",d:subTotals.Practice.d,t:subTotals.Practice.t},
+  {k:"Habits",label:"Habits",col:"#38bdf8",d:subTotals.Habits.d,t:subTotals.Habits.t}
+].map(s=>{
+  const p=s.t?Math.round(s.d/s.t*100):0;
+  const on=activeFilter===s.k?"on":"";
+  return`<div class="sb-item ${on}" data-sub="${s.k}"><div class="sb-head"><span>${s.label}</span><b>${s.d}/${s.t} <small>(${p}%)</small></b></div><div class="sb-track"><div class="sb-fill" style="width:${p}%;background:${s.col}"></div></div></div>`;
+}).join("");
+
+// 9-Week progression interactive bar chart
+document.getElementById("wc-bars").innerHTML=[...Array(9)].map((_,w)=>{
+  const[a,b]=wp(w);
+  const p=b?Math.round(a/b*100):0;
+  const isCur=w===wk;
+  return`<div class="wc-col ${isCur?"on":""}" data-w="${w}"><span class="wc-pct">${p}%</span><div class="wc-track"><div class="wc-fill" style="height:${Math.max(6,p)}%"></div></div><span class="wc-lbl">W${w+1}</span></div>`;
+}).join("");
+document.getElementById("wc-tip").textContent=`Week ${wk+1}: ${wDone}/${wTot} (${wTot?Math.round(wDone/wTot*100):0}%)`;
+
+// Filter Banner
+const fbWrap=document.getElementById("filter-banner-wrap");
+if(activeFilter){
+  fbWrap.innerHTML=`<div class="filter-banner"><span>Highlighting: <b>${activeFilter}</b></span><button type="button" id="clear-filter">Show All</button></div>`;
+}else{
+  fbWrap.innerHTML="";
+}
+
+// Week tabs
+document.getElementById("tabs").innerHTML=[...Array(9)].map((_,w)=>{const[a,b]=wp(w);return`<div class="tab ${w===wk?"on":""}" data-w="${w}"><b>Week ${w+1}</b>${wl(w).split(" – ")[0]}<i><u style="width:${b?a/b*100:0}%"></u></i></div>`}).join("");
+document.getElementById("wkt").textContent=wl(wk);
+document.getElementById("wkp").textContent=wDone+"/"+wTot+" topics · "+(wTot?Math.round(wDone/wTot*100):0)+"%";
+
+// Days cards
+document.getElementById("days").innerHTML=days.filter(d=>d.w===wk).map(d=>{
+const full=!d.off&&dT(d)===nT(d);
+let body="";
+if(d.t[0]==="S")body='<div class="off">SUNDAY</div>';
+else if(d.t[0]==="H")body='<div class="off">HOLIDAY</div>';
+else if(d.t[0]==="X")body='<div class="off">SURPRISE CLASS 🎁</div>';
+else body=d.t.map((t,i)=>{
+  const on=g(d.k,"t"+i);
+  const sk=getSubKey(d,i);
+  const lab=d.t.length===2&&i===1?"Revision":SUB[i];
+  let filterCls="";
+  if(activeFilter){
+    if(activeFilter==="Habits")filterCls="filter-dim";
+    else if(activeFilter===sk)filterCls="filter-hl";
+    else filterCls="filter-dim";
+  }
+  return`<div class="row ${on?"on":""} ${filterCls} ${pop===d.k+"t"+i?"pop":""}" data-k="${d.k}" data-i="t${i}"><span class="cb">${on?"✓":""}</span><span class="tx"><small>${lab}</small>${t}</span></div>`;
+}).join("");
+
+const isHabHl=activeFilter==="Habits"?"filter-hl":"";
+const hab=d.t[0]==="X"?"":`<div class="hab">${HAB.map((h,i)=>`<div class="chip ${isHabHl} ${g(d.k,"h"+i)?"on":""} ${pop===d.k+"h"+i?"pop":""}" data-k="${d.k}" data-i="h${i}">${h}</div>`).join("")}</div>`;
+
+return`<div class="day ${d.k===tk?"today":""} ${full?"done":""}"><div class="dh"><div class="dt">${d.d}<small>${MN[d.m-1].toUpperCase()}</small></div><div class="dn">${DN[d.dt.getDay()]}<small>${d.off?"":dT(d)+"/"+nT(d)+" topics"}</small></div>${d.k===tk?'<span class="badge">TODAY</span>':full?'<span class="badge" style="background:var(--ok);color:#fff">DONE ✓</span>':""}</div>${body}${hab}${remHTML(d)}</div>`;
+}).join("");pop="";
+}
+
+function showAnalyticsModal(){
+  let T=0,D=0,H=0;
+  let perfectDays=0;
+  days.forEach(d=>{
+    T+=nT(d); D+=dT(d); H+=dH(d);
+    if(!d.off&&nT(d)>0&&dT(d)===nT(d))perfectDays++;
+  });
+  const p=T?Math.round(D/T*100):0;
+
+  const milestones=[
+    {icon:"🚀",name:"Arc Ignition",req:"Complete 1 topic",unlocked:D>=1},
+    {icon:"⚡",name:"10% Stride",req:"Complete 10% topics",unlocked:p>=10},
+    {icon:"🔥",name:"Arc Warrior",req:"25% Arc progress",unlocked:p>=25},
+    {icon:"🛡️",name:"Halfway Titan",req:"50% Arc progress",unlocked:p>=50},
+    {icon:"⚔️",name:"Exam Ready",req:"75% Arc progress",unlocked:p>=75},
+    {icon:"👑",name:"Arc Champion",req:"100% Arc completed",unlocked:p>=100}
+  ];
+
+  document.getElementById("modal-body").innerHTML=`
+    <div class="m-grid">
+      ${milestones.map(m=>`
+        <div class="m-badge ${m.unlocked?"achieved":""}">
+          <span class="m-icon">${m.icon}</span>
+          <b>${m.name}</b>
+          <small>${m.unlocked?"Unlocked ✓":m.req}</small>
+        </div>
+      `).join("")}
+    </div>
+    <div class="m-stat-row"><span>Total Completed Topics</span><b>${D} / ${T} (${p}%)</b></div>
+    <div class="m-stat-row"><span>Perfect Days Streak</span><b>${perfectDays} days</b></div>
+    <div class="m-stat-row"><span>Habit Repetitions</span><b>${H} / 183</b></div>
+    <div class="m-stat-row"><span>Estimated Study Hours</span><b>~${Math.round(D*2.5 + H*0.5)} hrs</b></div>
+  `;
+  document.getElementById("analytics-modal").classList.add("show");
+}
+
+document.addEventListener("click",e=>{
+const pill=e.target.closest(".sp-btn");
+if(pill){chartMode=pill.dataset.cm;render();return}
+
+const rw=e.target.closest("#ring-wrap");
+if(rw){
+  chartMode = chartMode==="arc"?"week":chartMode==="week"?"today":"arc";
+  render();
+  return;
+}
+
+const sbItem=e.target.closest(".sb-item");
+if(sbItem){
+  const sub=sbItem.dataset.sub;
+  activeFilter = activeFilter===sub?null:sub;
+  render();
+  return;
+}
+
+const clrFilter=e.target.closest("#clear-filter");
+if(clrFilter){
+  activeFilter=null;
+  render();
+  return;
+}
+
+const wcCol=e.target.closest(".wc-col");
+if(wcCol){
+  wk=+wcCol.dataset.w;
+  render();
+  const tabsEl=document.getElementById("tabs");
+  if(tabsEl)tabsEl.scrollIntoView({behavior:"smooth",block:"nearest"});
+  return;
+}
+
+const ins=e.target.closest("[data-action='insights']");
+if(ins){showAnalyticsModal();return}
+
+const mClose=e.target.closest("#modal-close");
+if(mClose||e.target.id==="analytics-modal"){
+  document.getElementById("analytics-modal").classList.remove("show");
+  return;
+}
+
+const tb=e.target.closest(".tab");if(tb){wk=+tb.dataset.w;render();return}
+
+const rb=e.target.closest("[data-r]");
+if(rb){
+  const k=rb.dataset.r;
+  if(opn.has(k)){
+    const ta=document.querySelector(`[data-n="${k}"]`);
+    if(ta){st[k]=st[k]||{};st[k].n=ta.value.trim();save()}
+    opn.delete(k);render();
+    if(window.Android&&window.Android.showToast){window.Android.showToast("Remark saved")}
+  }else{
+    opn.add(k);render();
+    const ta=document.querySelector(`[data-n="${k}"]`);if(ta)ta.focus()
+  }
+  return;
+}
+
+const el=e.target.closest("[data-k]");
+if(el){
+  const k=el.dataset.k,i=el.dataset.i;
+  st[k]=st[k]||{};st[k][i]=st[k][i]?0:1;
+  pop=k+i;save();render();
+}
+});
+
+document.addEventListener("input",e=>{
+  const k=e.target.dataset&&e.target.dataset.n;
+  if(k){st[k]=st[k]||{};st[k].n=e.target.value;save()}
+});
+
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+try{const c=document.createElement("canvas");c.width=c.height=180;const x=c.getContext("2d");x.fillStyle="#7a0a18";x.fillRect(0,0,180,180);x.fillStyle="#ffc21a";x.font="bold 80px Arial";x.textAlign="center";x.fillText("WA",90,115);const l=document.createElement("link");l.rel="apple-touch-icon";l.href=c.toDataURL("image/png");document.head.appendChild(l)}catch(e){}
+
+document.getElementById("bk").onclick=async()=>{
+  const s=JSON.stringify(st);
+  if(window.Android&&window.Android.copyToClipboard){window.Android.copyToClipboard(s);return}
+  try{await navigator.clipboard.writeText(s);alert("Backup copied. Paste it somewhere safe.")}catch(e){prompt("Copy this backup:",s)}
+};
+document.getElementById("rs").onclick=()=>{
+  let s="";
+  if(window.Android&&window.Android.getClipboardText){try{s=window.Android.getClipboardText()}catch(e){}}
+  s=prompt("Paste your backup here:",s);
+  if(!s)return;
+  try{st=JSON.parse(s);save();render()}catch(e){alert("That backup is not valid.")}
+};
+document.getElementById("reset").onclick=()=>{if(confirm("Clear all progress?")){st={};save();render()}};
+
+render();
+const on=document.querySelector(".day.today");if(on)on.scrollIntoView({block:"center"});
+</script></body></html>
